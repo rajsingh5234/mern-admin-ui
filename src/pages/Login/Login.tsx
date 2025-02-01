@@ -75,8 +75,6 @@ const LoginPage = () => {
                         <Form
                             initialValues={{
                                 remember: true,
-                                username: "customer@gmail.com",
-                                password: "password"
                             }}
                             onFinish={(values) => {
                                 mutate({ email: values.username, password: values.password })
