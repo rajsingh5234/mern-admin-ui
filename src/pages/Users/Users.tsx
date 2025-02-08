@@ -1,4 +1,4 @@
-import { Breadcrumb, Button, Space, Table } from "antd"
+import { Breadcrumb, Button, Drawer, Space, Table } from "antd"
 import { PlusOutlined, RightOutlined } from '@ant-design/icons'
 import { Link, Navigate } from "react-router-dom"
 import { useQuery } from "@tanstack/react-query"
@@ -6,6 +6,7 @@ import { getUsers } from "../../http/api"
 import { User } from "../../types"
 import { useAuthStore } from "../../store"
 import UsersFilter from "./UsersFilter"
+import { useState } from "react"
 
 const columns = [
     {
@@ -41,6 +42,8 @@ const Users = () => {
 
     const { user } = useAuthStore();
 
+    const [drawerOpen, setDrawerOpen] = useState(false);
+
     const { data: users, isLoading, isError, error } = useQuery({
         queryKey: ['Users'],
         queryFn: () => {
@@ -72,12 +75,29 @@ const Users = () => {
                     <Button
                         type="primary"
                         icon={<PlusOutlined />}
+                        onClick={() => setDrawerOpen(true)}
                     >
                         Add User
                     </Button>
                 </UsersFilter>
 
                 <Table columns={columns} dataSource={users} rowKey={'id'} />
+
+                <Drawer
+                    title="Create user"
+                    width={720}
+                    destroyOnClose={true}
+                    open={drawerOpen}
+                    onClose={() => setDrawerOpen(false)}
+                    extra={
+                        <Space>
+                            <Button>Cancel</Button>
+                            <Button type="primary">Submit</Button>
+                        </Space>
+                    }
+                >
+                    Content
+                </Drawer>
             </Space>
         </>
     )
