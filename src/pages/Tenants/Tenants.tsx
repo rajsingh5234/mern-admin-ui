@@ -1,13 +1,13 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { Breadcrumb, Button, Drawer, Space, Table, Form, theme, Flex, Spin, Typography } from "antd";
 import { LoadingOutlined, PlusOutlined, RightOutlined } from '@ant-design/icons'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createTenant, getTenants } from "../../http/api";
+import { createTenant, getTenants, updateTenant } from "../../http/api";
 import TenantsFilter from "./TenantsFilter";
 import { useAuthStore } from "../../store";
 import TenantForm from "./Forms/TenantForm";
-import { CreateTenantData, FieldData } from "../../types";
+import { CreateTenantData, FieldData, Tenant } from "../../types";
 import { PER_PAGE } from "../../constants";
 import { debounce } from "lodash";
 
@@ -39,6 +39,8 @@ const Tenants = () => {
     const queryClient = useQueryClient();
 
     const [drawerOpen, setDrawerOpen] = useState(false);
+
+    const [currentEditingTenant, setCurrentEditingTenant] = useState<Tenant | null>(null);
 
     const [queryParams, setQueryParams] = useState({
         perPage: PER_PAGE,
@@ -73,11 +75,29 @@ const Tenants = () => {
         },
     });
 
+    const { mutate: updateTenantMutation } = useMutation({
+        mutationKey: ['update-tenant'],
+        mutationFn: async (data: CreateTenantData) =>
+            updateTenant(data, String(currentEditingTenant!.id)).then((res) => res.data),
+        onSuccess: async () => {
+            queryClient.invalidateQueries({ queryKey: ['tenants'] });
+            return;
+        },
+    });
+
     const onHandleSubmit = async () => {
         await form.validateFields();
-        await tenantMutate(form.getFieldsValue());
+        const isEditMode = !!currentEditingTenant;
+        if (isEditMode) {
+            await updateTenantMutation(form.getFieldsValue());
+        }
+        else {
+            await tenantMutate(form.getFieldsValue());
+        }
+
         form.resetFields();
         setDrawerOpen(false);
+        setCurrentEditingTenant(null);
     }
 
     const debouncedQUpdate = useMemo(() => {
@@ -99,6 +119,13 @@ const Tenants = () => {
             setQueryParams((prev) => ({ ...prev, ...changedFilterFields, currentPage: 1 }));
         }
     };
+
+    useEffect(() => {
+        if (currentEditingTenant) {
+            setDrawerOpen(true);
+            form.setFieldsValue(currentEditingTenant);
+        }
+    }, [currentEditingTenant, form]);
 
     if (user?.role !== 'admin') {
         return <Navigate to="/" replace={true} />;
@@ -132,7 +159,25 @@ const Tenants = () => {
                 </Form>
 
                 <Table
-                    columns={columns}
+                    columns={[
+                        ...columns,
+                        {
+                            title: 'Actions',
+                            render: (_: string, record: Tenant) => {
+                                return (
+                                    <Space>
+                                        <Button
+                                            type="link"
+                                            onClick={() => {
+                                                setCurrentEditingTenant(record);
+                                            }}>
+                                            Edit
+                                        </Button>
+                                    </Space>
+                                );
+                            },
+                        },
+                    ]}
                     dataSource={tenants?.data || []}
                     rowKey={'id'}
                     pagination={{
@@ -154,7 +199,7 @@ const Tenants = () => {
                 />
 
                 <Drawer
-                    title="Create restaurant"
+                    title={currentEditingTenant ? "Edit restaurant" : "Create restaurant"}
                     styles={{ body: { backgroundColor: colorBgLayout } }}
                     width={720}
                     destroyOnClose={true}
@@ -162,6 +207,7 @@ const Tenants = () => {
                     onClose={() => {
                         form.resetFields();
                         setDrawerOpen(false);
+                        setCurrentEditingTenant(null);
                     }}
                     extra={
                         <Space>
@@ -169,6 +215,7 @@ const Tenants = () => {
                                 onClick={() => {
                                     form.resetFields();
                                     setDrawerOpen(false);
+                                    setCurrentEditingTenant(null);
                                 }}
                             >
                                 Cancel
