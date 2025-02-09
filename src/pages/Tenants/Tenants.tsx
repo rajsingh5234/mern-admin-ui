@@ -32,7 +32,7 @@ const Tenants = () => {
     const [drawerOpen, setDrawerOpen] = useState(false);
 
     const { data: tenants, isLoading, isError, error } = useQuery({
-        queryKey: ['Users'],
+        queryKey: ['tenants'],
         queryFn: () => {
             return getTenants().then((res) => res.data);
         }

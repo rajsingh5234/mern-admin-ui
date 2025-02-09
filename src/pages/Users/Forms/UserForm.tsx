@@ -107,7 +107,7 @@ const UserForm = () => {
                                         placeholder="Select role">
                                         <Select.Option value="admin">Admin</Select.Option>
                                         <Select.Option value="manager">Manager</Select.Option>
-                                        <Select.Option value="manager">Customer</Select.Option>
+                                        <Select.Option value="customer">Customer</Select.Option>
                                     </Select>
                                 </Form.Item>
                             </Col>
